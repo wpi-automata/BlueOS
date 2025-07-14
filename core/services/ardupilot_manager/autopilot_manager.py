@@ -47,11 +47,7 @@ class AutoPilotManager(metaclass=Singleton):
         self.mavlink_manager = MavlinkManager()
 
         # Load settings and do the initial configuration
-        if self.settings.load():
-            logger.info(f"Loaded settings from {self.settings.settings_file}.")
-            logger.debug(self.settings.content)
-        else:
-            self.settings.create_settings_file()
+        self.load_settings()
 
         self.autopilot_default_endpoints = [
             Endpoint(
@@ -154,6 +150,13 @@ class AutoPilotManager(metaclass=Singleton):
         self.should_be_running = False
         self.remove_old_logs()
         self.current_sitl_frame = self.load_sitl_frame()
+
+    def load_settings(self) -> None:
+        if self.settings.load():
+            logger.info(f"Loaded settings from {self.settings.settings_file}.")
+            logger.debug(self.settings.content)
+        else:
+            self.settings.create_settings_file()
 
     def remove_old_logs(self) -> None:
         def need_to_remove_file(file: pathlib.Path) -> bool:
@@ -565,7 +568,7 @@ class AutoPilotManager(metaclass=Singleton):
         # This only applies to autopilot process itself, mavlink manager will check by itself
         if self.should_be_running and self.is_running():
             return
-
+        self.load_settings()  # If user changed settings, reflect them
         await self.setup()
         try:
             available_boards = await self.available_boards()
