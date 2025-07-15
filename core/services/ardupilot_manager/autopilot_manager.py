@@ -272,6 +272,24 @@ class AutoPilotManager(metaclass=Singleton):
         if default_params_path.is_file():
             return f"--defaults {default_params_path}"
         return ""
+    
+    def launch_ardupilot(self, args: dict) -> None:
+        logger.debug(f"Launching ArduPilot with args:  {args}")
+        firmware_path = self.firmware_manager.firmware_path(
+            self._current_board.platform)
+        self.firmware_manager.validate_firmware(firmware_path, 
+                                                self._current_board.platform)
+        cmdline = [firmware_path]
+        for key, value in args.items():
+            cmdline.extend([key, value])
+        # pylint: disable=consider-using-with
+        self.ardupilot_subprocess = subprocess.Popen(
+            cmdline,
+            shell=False,
+            encoding="utf-8",
+            errors="ignore",
+            cwd=self.settings.firmware_folder,
+        )
 
     async def start_linux_board(self, board: LinuxFlightController) -> None:
         self._current_board = board
@@ -416,21 +434,10 @@ class AutoPilotManager(metaclass=Singleton):
             protected=True,
         )
         # pylint: disable=consider-using-with
-        self.ardupilot_subprocess = subprocess.Popen(
-            [
-                firmware_path,
-                "--model",
-                self.current_sitl_frame.value,
-                "--base-port",
-                str(master_endpoint.argument),
-                "--home",
-                "-27.563,-48.459,0.0,270.0",
-            ],
-            shell=False,
-            encoding="utf-8",
-            errors="ignore",
-            cwd=self.settings.firmware_folder,
-        )
+        args = {"--model" : self.current_sitl_frame.value,
+                "--base-port" : str(master_endpoint.argument)}
+        args = self.settings.content["ardupilot_args"] | args
+        self.launch_ardupilot(args)
 
         await self.start_mavlink_manager(master_endpoint)
 
