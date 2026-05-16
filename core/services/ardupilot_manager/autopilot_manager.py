@@ -32,7 +32,6 @@ from typedefs import (
     PlatformType,
     Serial,
     SITLFrame,
-    SitlOptions,
     Vehicle,
 )
 
@@ -471,11 +470,11 @@ class AutoPilotManager(metaclass=Singleton):
             "--home",
             "-27.563,-48.459,0.0,270.0",
         ]
-        for i in range(len(sitl_options.sitl_options)):
-            if sitl_options.sitl_options[i].flag:
-                options.append(str(sitl_options.sitl_options[i].flag))
+        for i, opt in enumerate(sitl_options.sitl_options):
+            if opt.flag:
+                options.append(str(opt.flag))
             if sitl_options.sitl_options[i].value:
-                options.append(str(sitl_options.sitl_options[i].value))
+                options.append(str(opt.value))
         # pylint: disable=consider-using-with
         self.ardupilot_subprocess = subprocess.Popen(
             options,
