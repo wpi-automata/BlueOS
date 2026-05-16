@@ -26,6 +26,7 @@ from typedefs import (
     Parameters,
     Serial,
     SITLFrame,
+    SitlOptions,
     Vehicle,
 )
 
@@ -234,10 +235,12 @@ async def restart() -> Any:
 
 @index_router_v1.post("/start", summary="Start the autopilot.")
 @index_to_http_exception
-async def start() -> Any:
+async def start(sitl_options: SitlOptions) -> Any:
     logger.debug("Starting ardupilot...")
+
     autopilot.set_start_on_boot(True)
-    await autopilot.start_ardupilot()
+    await autopilot.start_ardupilot(sitl_options=sitl_options)
+
     logger.debug("Ardupilot successfully started.")
 
 

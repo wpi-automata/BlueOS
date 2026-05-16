@@ -32,6 +32,7 @@ from typedefs import (
     PlatformType,
     Serial,
     SITLFrame,
+    SitlOptions,
     Vehicle,
 )
 
@@ -438,7 +439,8 @@ class AutoPilotManager(metaclass=Singleton):
         self.ardupilot_subprocess = None
         await self.start_mavlink_manager(self.master_endpoint)
 
-    async def start_sitl(self) -> None:
+    async def start_sitl(self, sitl_options = None) -> None:
+        logger.debug(f"Starting SITL with {sitl_options} options...")
         self._current_board = BoardDetector.detect_sitl()
         if not self.firmware_manager.is_firmware_installed(self._current_board):
             await self.firmware_manager.install_firmware_from_params(Vehicle.Sub, self._current_board)
@@ -460,9 +462,7 @@ class AutoPilotManager(metaclass=Singleton):
             argument=5760,
             protected=True,
         )
-        # pylint: disable=consider-using-with
-        self.ardupilot_subprocess = subprocess.Popen(
-            [
+        options = [
                 firmware_path,
                 "--model",
                 self.current_sitl_frame.value,
@@ -470,7 +470,15 @@ class AutoPilotManager(metaclass=Singleton):
                 str(master_endpoint.argument),
                 "--home",
                 "-27.563,-48.459,0.0,270.0",
-            ],
+            ]
+        for i in range(len(sitl_options.sitl_options)):
+            if (sitl_options.sitl_options[i].flag):
+                options.append(str(sitl_options.sitl_options[i].flag))
+            if (sitl_options.sitl_options[i].value):
+                options.append(str(sitl_options.sitl_options[i].value))
+        # pylint: disable=consider-using-with
+        self.ardupilot_subprocess = subprocess.Popen(
+            options,
             shell=False,
             encoding="utf-8",
             errors="ignore",
@@ -619,7 +627,7 @@ class AutoPilotManager(metaclass=Singleton):
         await self.mavlink_manager.stop()
         logger.info("Mavlink manager stopped.")
 
-    async def start_ardupilot(self) -> None:
+    async def start_ardupilot(self, sitl_options=None) -> None:
         # This only applies to autopilot process itself, mavlink manager will check by itself
         if self.should_be_running and self.is_running():
             return
@@ -642,7 +650,7 @@ class AutoPilotManager(metaclass=Singleton):
             elif flight_controller.platform.type == PlatformType.Serial:
                 await self.start_serial(flight_controller)
             elif flight_controller.platform == Platform.SITL:
-                await self.start_sitl()
+                await self.start_sitl(sitl_options)
             elif flight_controller.platform == Platform.Manual:
                 await self.start_manual_board(flight_controller)
             else:
