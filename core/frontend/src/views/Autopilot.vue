@@ -64,6 +64,16 @@
             </v-expansion-panel-content>
           </v-expansion-panel>
         </v-expansion-panels>
+        <v-expansion-panels v-if="settings.is_pirate_mode && is_sitl_board">
+          <v-expansion-panel>
+            <v-expansion-panel-header>
+              SITL Options
+            </v-expansion-panel-header>
+            <v-expansion-panel-content>
+              <SitlOptions ref="sitlOptions" />
+            </v-expansion-panel-content>
+          </v-expansion-panel>
+        </v-expansion-panels>
         <v-expansion-panels v-if="settings.is_pirate_mode && isLinuxFlightController">
           <v-expansion-panel>
             <v-expansion-panel-header>
@@ -74,6 +84,7 @@
             </v-expansion-panel-content>
           </v-expansion-panel>
         </v-expansion-panels>
+        
       </v-card-text>
       <v-card-actions class="d-flex justify-end align-center flex-wrap">
         <v-spacer />
@@ -140,6 +151,7 @@ import BoardChangeDialog from '@/components/autopilot/BoardChangeDialog.vue'
 import FirmwareManager from '@/components/autopilot/FirmwareManager.vue'
 import MasterEndpointManager from '@/components/autopilot/MasterEndpointManager.vue'
 import NotSafeOverlay from '@/components/common/NotSafeOverlay.vue'
+import SitlOptions from '@/components/autopilot/SitlOptions.vue'
 import { MavAutopilot } from '@/libs/MAVLink2Rest/mavlink2rest-ts/messages/mavlink2rest-enum'
 import Notifier from '@/libs/notifier'
 import settings from '@/libs/settings'
@@ -161,6 +173,7 @@ export default Vue.extend({
     AutopilotSerialConfiguration,
     NotSafeOverlay,
     MasterEndpointManager,
+    SitlOptions,
   },
   data() {
     return {
@@ -221,6 +234,10 @@ export default Vue.extend({
     is_external_board(): boolean {
       return autopilot.current_board?.name === 'Manual'
     },
+    is_sitl_board(): boolean {
+      // Guard against current_board or name being undefined before calling toLowerCase()
+      return autopilot.current_board?.name?.toLowerCase() === 'sitl'
+    },
     current_board(): FlightController | null {
       return autopilot.current_board
     },
@@ -270,6 +287,9 @@ export default Vue.extend({
         method: 'post',
         url: `${autopilot.API_URL}/start`,
         timeout: 10000,
+        data: {
+          sitl_options: this.$refs.sitlOptions ? (this.$refs.sitlOptions as any).getData() : [],
+        },
       })
         .catch((error) => {
           notifier.pushBackError('AUTOPILOT_START_FAIL', error)
