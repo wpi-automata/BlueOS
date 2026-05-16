@@ -210,10 +210,11 @@ class Serial(BaseModel):
     def __hash__(self) -> int:  # make hashable BaseModel subclass
         return hash(self.port + self.endpoint)
 
-# Used to recieve the sitl options from the frontend, which are then passed to the SITL process as command line arguments
+
 class FlagValuePair(BaseModel):
     flag: str
     value: str
+
 
 class SitlOptions(BaseModel):
     sitl_options: Optional[List[FlagValuePair]]

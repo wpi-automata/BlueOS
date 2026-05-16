@@ -439,7 +439,7 @@ class AutoPilotManager(metaclass=Singleton):
         self.ardupilot_subprocess = None
         await self.start_mavlink_manager(self.master_endpoint)
 
-    async def start_sitl(self, sitl_options = None) -> None:
+    async def start_sitl(self, sitl_options=None) -> None:
         logger.debug(f"Starting SITL with {sitl_options} options...")
         self._current_board = BoardDetector.detect_sitl()
         if not self.firmware_manager.is_firmware_installed(self._current_board):
@@ -463,18 +463,18 @@ class AutoPilotManager(metaclass=Singleton):
             protected=True,
         )
         options = [
-                firmware_path,
-                "--model",
-                self.current_sitl_frame.value,
-                "--base-port",
-                str(master_endpoint.argument),
-                "--home",
-                "-27.563,-48.459,0.0,270.0",
-            ]
+            firmware_path,
+            "--model",
+            self.current_sitl_frame.value,
+            "--base-port",
+            str(master_endpoint.argument),
+            "--home",
+            "-27.563,-48.459,0.0,270.0",
+        ]
         for i in range(len(sitl_options.sitl_options)):
-            if (sitl_options.sitl_options[i].flag):
+            if sitl_options.sitl_options[i].flag:
                 options.append(str(sitl_options.sitl_options[i].flag))
-            if (sitl_options.sitl_options[i].value):
+            if sitl_options.sitl_options[i].value:
                 options.append(str(sitl_options.sitl_options[i].value))
         # pylint: disable=consider-using-with
         self.ardupilot_subprocess = subprocess.Popen(
