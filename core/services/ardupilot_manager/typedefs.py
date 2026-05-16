@@ -217,4 +217,4 @@ class FlagValuePair(BaseModel):
 
 
 class SitlOptions(BaseModel):
-    sitl_options: Optional[List[FlagValuePair]]
+    sitl_options: SList[FlagValuePair]

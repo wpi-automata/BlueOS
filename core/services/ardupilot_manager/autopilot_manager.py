@@ -439,7 +439,7 @@ class AutoPilotManager(metaclass=Singleton):
         self.ardupilot_subprocess = None
         await self.start_mavlink_manager(self.master_endpoint)
 
-    async def start_sitl(self, sitl_options: SitlOptions = None) -> None:
+    async def start_sitl(self, sitl_options: Optional[SitlOptions] = None) -> None:
         logger.debug(f"Starting SITL with {sitl_options} options...")
         self._current_board = BoardDetector.detect_sitl()
         if not self.firmware_manager.is_firmware_installed(self._current_board):
@@ -463,7 +463,7 @@ class AutoPilotManager(metaclass=Singleton):
             protected=True,
         )
         options: list[str] = [
-            firmware_path,
+            str(firmware_path),
             "--model",
             self.current_sitl_frame.value,
             "--base-port",
@@ -471,11 +471,12 @@ class AutoPilotManager(metaclass=Singleton):
             "--home",
             "-27.563,-48.459,0.0,270.0",
         ]
-        for i, opt in enumerate(sitl_options.sitl_options):
-            if opt.flag:
-                options.append(str(opt.flag))
-            if sitl_options.sitl_options[i].value:
-                options.append(str(opt.value))
+        if sitl_options is not None:
+            for i, opt in enumerate(sitl_options.sitl_options):
+                if opt.flag:
+                    options.append(str(opt.flag))
+                if sitl_options.sitl_options[i].value:
+                    options.append(str(opt.value))
         # pylint: disable=consider-using-with
         self.ardupilot_subprocess = subprocess.Popen(
             options,
@@ -627,7 +628,7 @@ class AutoPilotManager(metaclass=Singleton):
         await self.mavlink_manager.stop()
         logger.info("Mavlink manager stopped.")
 
-    async def start_ardupilot(self, sitl_options: SitlOptions = None) -> None:
+    async def start_ardupilot(self, sitl_options: Optional[SitlOptions] = None) -> None:
         # This only applies to autopilot process itself, mavlink manager will check by itself
         if self.should_be_running and self.is_running():
             return
