@@ -439,7 +439,7 @@ class AutoPilotManager(metaclass=Singleton):
         self.ardupilot_subprocess = None
         await self.start_mavlink_manager(self.master_endpoint)
 
-    async def start_sitl(self, sitl_options: SitlOptions=None) -> None:
+    async def start_sitl(self, sitl_options: SitlOptions = None) -> None:
         logger.debug(f"Starting SITL with {sitl_options} options...")
         self._current_board = BoardDetector.detect_sitl()
         if not self.firmware_manager.is_firmware_installed(self._current_board):
@@ -627,7 +627,7 @@ class AutoPilotManager(metaclass=Singleton):
         await self.mavlink_manager.stop()
         logger.info("Mavlink manager stopped.")
 
-    async def start_ardupilot(self, sitl_options: SitlOptions=None) -> None:
+    async def start_ardupilot(self, sitl_options: SitlOptions = None) -> None:
         # This only applies to autopilot process itself, mavlink manager will check by itself
         if self.should_be_running and self.is_running():
             return
