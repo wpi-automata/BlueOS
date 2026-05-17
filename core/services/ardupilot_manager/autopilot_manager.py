@@ -481,10 +481,9 @@ class AutoPilotManager(metaclass=Singleton):
             logger.error("Error while saving execution arguments")
             logger.error(repr(e))
 
-    def get_exec_arguments(self, firmware_name: str) -> Optional[dict[str, str]]:
+    def get_exec_arguments(self, firmware_name: str) -> Any:
         try:
-            config = self.configuration["exec_arguments"][firmware_name]
-            return config
+            return self.configuration["exec_arguments"][firmware_name]
         except Exception as e:
             logger.error("Error while getting execution arguments")
             logger.error(repr(e))
