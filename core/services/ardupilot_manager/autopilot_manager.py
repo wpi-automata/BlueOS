@@ -470,7 +470,7 @@ class AutoPilotManager(metaclass=Singleton):
             raise NoPreferredBoardSet("Preferred board not set yet.")
         return FlightController(**preferred_board)
 
-    async def set_exec_arguments(self, firmware_name: str, settings: dict[str, str]) -> None:
+    def set_exec_arguments(self, firmware_name: str, settings: dict[str, str]) -> None:
         try:
             if "exec_arguments" not in self.configuration:
                 self.configuration["exec_arguments"] = {}
@@ -480,6 +480,14 @@ class AutoPilotManager(metaclass=Singleton):
         except Exception as e:
             logger.error("Error while saving execution arguments")
             logger.error(repr(e))
+
+    def get_exec_arguments(self, firmware_name: str) -> dict[str, str]:
+        try:
+            config = self.configuration["exec_arguments"][firmware_name]
+        except Exception as e:
+            logger.error("Error while getting execution arguments")
+            logger.error(repr(e))
+        return config
 
     def get_board_to_be_used(self, boards: List[FlightController]) -> FlightController:
         """Check if preferred board exists and is connected. If so, use it, otherwise, choose by priority."""
