@@ -481,13 +481,14 @@ class AutoPilotManager(metaclass=Singleton):
             logger.error("Error while saving execution arguments")
             logger.error(repr(e))
 
-    def get_exec_arguments(self, firmware_name: str) -> dict[str, str]:
+    def get_exec_arguments(self, firmware_name: str) -> Optional[dict[str, str]]:
         try:
             config = self.configuration["exec_arguments"][firmware_name]
+            return config
         except Exception as e:
             logger.error("Error while getting execution arguments")
             logger.error(repr(e))
-        return config
+            return None
 
     def get_board_to_be_used(self, boards: List[FlightController]) -> FlightController:
         """Check if preferred board exists and is connected. If so, use it, otherwise, choose by priority."""
