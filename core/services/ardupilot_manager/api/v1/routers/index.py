@@ -254,7 +254,11 @@ def set_exec_arguments(firmware: str, arguments: dict[str, str]) -> Any:
     autopilot.set_exec_arguments(firmware, arguments)
 
 
-@index_router_v1.post("/get_exec_arguments", summary="Get arguments to be passed to specified autopilot executable")
+@index_router_v1.post(
+    "/get_exec_arguments",
+    response_model=dict[str, str],
+    summary="Get arguments to be passed to specified autopilot executable",
+)
 @index_to_http_exception
 async def get_exec_arguments(firmware: str) -> Any:
     logger.info(f"Getting execution arguments for firmware {firmware}")
