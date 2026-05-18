@@ -1,4 +1,5 @@
 import asyncio
+import json
 import os
 import pathlib
 import subprocess
@@ -451,26 +452,39 @@ class AutoPilotManager(metaclass=Singleton):
         firmware_path = self.firmware_manager.firmware_path(self._current_board.platform)
         self.firmware_manager.validate_firmware(firmware_path, self._current_board.platform)
 
+        if "exec_arguments" not in self.configuration or str(firmware_path) not in self.configuration["exec_arguments"]:
+            with open(pathlib.Path(__file__).parent.resolve() / "default_arguments.json", "r", encoding="ascii") as f:
+                default_config = json.load(f)
+            logger.warning(f"Setting defaults parameters for SITL to {default_config}")
+            self.set_exec_arguments(str(firmware_path), "SITL", default_config["SITL"])
+        # Refresh configuration, as user may have changed settings since restart
+        self.settings.load()
+        self.configuration = deepcopy(self.settings.content)
+        arguments = self.configuration["exec_arguments"][str(firmware_path)]["SITL"]
+
         # ArduPilot SITL binary will bind TCP port 5760 (server) and the mavlink router will connect to it as a client
-        master_endpoint = Endpoint(
-            name="Master",
-            owner=self.settings.app_name,
-            connection_type=EndpointType.TCPClient,
-            place="127.0.0.1",
-            argument=5760,
-            protected=True,
-        )
+        if "endpoint" not in arguments:
+            logger.warning("Using default endpoint for SITL because none was provided in settings.json.")
+            master_endpoint = Endpoint(
+                name="Master",
+                owner=self.settings.app_name,
+                connection_type=EndpointType.TCPClient,
+                place="127.0.0.1",
+                argument=5760,
+                protected=True,
+            )
+        else:
+            master_endpoint = Endpoint(**arguments["endpoint"])
+
+        arg_list = [firmware_path]
+        for k, v in arguments.items():
+            if k != "endpoint":
+                arg_list.append(k)
+                if v != "":
+                    arg_list.append(v)
         # pylint: disable=consider-using-with
         self.ardupilot_subprocess = subprocess.Popen(
-            [
-                firmware_path,
-                "--model",
-                self.current_sitl_frame.value,
-                "--base-port",
-                str(master_endpoint.argument),
-                "--home",
-                "-27.563,-48.459,0.0,270.0",
-            ],
+            arg_list,
             shell=False,
             encoding="utf-8",
             errors="ignore",
@@ -519,6 +533,8 @@ class AutoPilotManager(metaclass=Singleton):
         return FlightController(**preferred_board)
 
     def set_exec_arguments(self, firmware_name: str, board: str, settings: dict[str, str]) -> None:
+        self.settings.load()
+        self.configuration = deepcopy(self.settings.content)
         try:
             if "exec_arguments" not in self.configuration:
                 self.configuration["exec_arguments"] = {}
@@ -532,6 +548,8 @@ class AutoPilotManager(metaclass=Singleton):
             logger.error(repr(e))
 
     def get_exec_arguments(self, firmware_name: str, board: str) -> Any:
+        self.settings.load()
+        self.configuration = deepcopy(self.settings.content)
         try:
             return self.configuration["exec_arguments"][firmware_name][board]
         except Exception as e:
