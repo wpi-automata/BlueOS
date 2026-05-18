@@ -453,7 +453,7 @@ class AutoPilotManager(metaclass=Singleton):
         self.firmware_manager.validate_firmware(firmware_path, self._current_board.platform)
 
         if "exec_arguments" not in self.configuration or str(firmware_path) not in self.configuration["exec_arguments"]:
-            with open(pathlib.Path(__file__).parent.resolve() / "default_arguments.json", "r", encoding="ascii") as f:
+            with open(pathlib.Path(__file__).parent.resolve() / "default_arguments.json", "r", encoding="utf-8") as f:
                 default_config = json.load(f)
             logger.warning(f"Setting defaults parameters for SITL to {default_config}")
             self.set_exec_arguments(str(firmware_path), "SITL", default_config["SITL"])
