@@ -464,29 +464,28 @@ class AutoPilotManager(metaclass=Singleton):
         self.configuration = deepcopy(self.settings.content)
         arguments = self.configuration["exec_arguments"][str(firmware_path)]["SITL"]
 
-        # ArduPilot SITL binary will bind TCP port 5760 (server) and the mavlink router will connect to it as a client
+        # ArduPilot SITL binary will bind TCP port specified by user (or default to port 5760) and the mavlink router will connect to it as a client
         default_endpoint_args = EndpointDefinition()
 
         endpoint_config = arguments.get("endpoint")
         if endpoint_config is None:
             logger.warning("Using default endpoint for SITL because none was provided in settings.json.")
             master_endpoint_args = default_endpoint_args
+        elif not isinstance(endpoint_config, dict):
+            logger.warning(
+                "Invalid endpoint configuration type '%s'; falling back to default endpoint for SITL.",
+                type(endpoint_config).__name__,
+            )
+            master_endpoint_args = default_endpoint_args
         else:
-            if not isinstance(endpoint_config, dict):
-                logger.warning(
-                    "Invalid endpoint configuration type '%s'; falling back to default endpoint for SITL.",
-                    type(endpoint_config).__name__,
-                )
-                master_endpoint_args = default_endpoint_args
-            else:
-                # Start with defaults, override only known fields, ignore unknown keys
-                arg_dict = EndpointDefinition().dict()
-                for key, value in endpoint_config.items():
-                    if key in default_endpoint_args:
-                        arg_dict[key] = self._sanitize_endpoint_argument(key, value)
-                    else:
-                        logger.debug("Ignoring unknown endpoint field '%s' in settings.json.", key)
-                master_endpoint_args = EndpointDefinition(**arg_dict)
+            # Start with defaults, override only known fields, ignore unknown keys
+            arg_dict = EndpointDefinition().dict()
+            for key, value in endpoint_config.items():
+                if key in default_endpoint_args:
+                    arg_dict[key] = self._sanitize_endpoint_argument(key, value)
+                else:
+                    logger.debug("Ignoring unknown endpoint field '%s' in settings.json.", key)
+            master_endpoint_args = EndpointDefinition(**arg_dict)
 
         master_endpoint = Endpoint(**master_endpoint_args.dict())
 
