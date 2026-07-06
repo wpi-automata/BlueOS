@@ -1,7 +1,7 @@
 <template>
   <div>
     <model-viewer
-      v-if="model_viewer_supported && model_viewer_ready && computed_model_path"
+      v-if="model_viewer_supported && model_viewer_ready && (computed_model_path || model_override_path)"
       id="modelviewer"
       ref="modelviewer"
       :src="model_override_path || computed_model_path"
@@ -101,12 +101,14 @@ import Vue from 'vue'
 
 import SpinningLogo from '@/components/common/SpinningLogo.vue'
 import autopilot_data from '@/store/autopilot'
+import customization_store from '@/store/customization'
 import ping from '@/store/ping'
 import {
   BTN_FUNCTION as SUB_BTN_FUNCTION,
   SERVO_FUNCTION as SUB_SERVO_FUNCTION,
 } from '@/types/autopilot/parameter-sub-enums'
 import { Dictionary, Indexed, Keyed } from '@/types/common'
+import { ModelEntry } from '@/types/customization'
 import { PingType } from '@/types/ping'
 import { canUseModelViewer, ensureModelViewer } from '@/utils/model_viewer_support'
 
@@ -177,6 +179,9 @@ export default Vue.extend({
         return this.modelpath
       }
       return autopilot_data.vehicle_model
+    },
+    override_models(): ModelEntry[] {
+      return customization_store.models
     },
     filtered_annotations(): (HotspotConfiguration & Indexed & Keyed)[] {
       if (this.noannotations) {
@@ -281,6 +286,9 @@ export default Vue.extend({
     lights2_are_present() {
       this.redraw()
     },
+    override_models() {
+      this.refresh_model_override()
+    },
   },
   async mounted() {
     if (this.model_viewer_supported) {
@@ -289,7 +297,7 @@ export default Vue.extend({
       this.model_viewer_supported = loaded
     }
     setTimeout(() => {
-      if (!this.computed_model_path) {
+      if (!this.computed_model_path && !this.model_override_path) {
         this.show_model_not_found = true
       }
     }, 5000)
@@ -299,6 +307,11 @@ export default Vue.extend({
     this.reloadAnnotations()
   },
   methods: {
+    async refresh_model_override(): Promise<void> {
+      this.model_override_path = await checkModelOverrides()
+      this.override_annotations = await this.loadAnnotationsOverride()
+      this.forceRefreshAnnotations()
+    },
     onModelViewerLoad() {
       this.redraw()
       this.hideIrrelevantParts()
@@ -363,9 +376,13 @@ export default Vue.extend({
       if (!this.model_override_path) {
         return {}
       }
-      const candidate_path = this.model_override_path?.replace('glb', 'json')
-      const response = await axios.get(candidate_path)
-      return response.data?.annotations ?? {}
+      const candidate_path = this.model_override_path.replace('glb', 'json')
+      try {
+        const response = await axios.get(candidate_path)
+        return response.data?.annotations ?? {}
+      } catch {
+        return {}
+      }
     },
     setAlphas(new_color: number, text = ''): void {
       const lower_text = text.toLowerCase()
